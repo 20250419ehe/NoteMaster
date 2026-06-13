@@ -71,6 +71,16 @@
             tools:text="分类"
             tools:visibility="visible" />
 
+        <!-- 标签 -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/noteTagChipGroup"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/categoryTextView" />
+
         <!-- 更新时间 -->
         <TextView
             android:id="@+id/updatedAtTextView"

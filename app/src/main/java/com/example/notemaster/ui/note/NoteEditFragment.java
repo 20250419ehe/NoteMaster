@@ -14,6 +14,13 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.notemaster.util.ReminderHelper;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -24,9 +31,12 @@ import androidx.navigation.Navigation;
 import com.example.notemaster.R;
 import com.example.notemaster.model.Category;
 import com.example.notemaster.model.Note;
+import com.example.notemaster.model.Tag;
 import com.example.notemaster.viewmodel.CategoryViewModel;
 import com.example.notemaster.viewmodel.NoteViewModel;
+import com.example.notemaster.viewmodel.TagViewModel;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -35,6 +45,7 @@ import java.util.List;
 public class NoteEditFragment extends Fragment {
     private NoteViewModel noteViewModel;
     private CategoryViewModel categoryViewModel;
+    private TagViewModel tagViewModel;
     private EditText titleEditText;
     private EditText contentEditText;
     private Spinner categorySpinner;
@@ -43,6 +54,8 @@ public class NoteEditFragment extends Fragment {
     private List<String> categoryNames = new ArrayList<>();
     private boolean isLocked = false;
     private String notePassword = "";
+    private long reminderTime = 0;
+    private List<String> selectedTags = new ArrayList<>();
 
     @Nullable
     @Override
@@ -54,6 +67,8 @@ public class NoteEditFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        ReminderHelper.createNotificationChannel(requireContext());
 
         if (getArguments() != null) {
             noteId = getArguments().getLong("noteId", -1);
@@ -86,7 +101,9 @@ public class NoteEditFragment extends Fragment {
     private void setupViewModel() {
         noteViewModel = new ViewModelProvider(this).get(NoteViewModel.class);
         categoryViewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
+        tagViewModel = new ViewModelProvider(this).get(TagViewModel.class);
         categoryViewModel.loadAllCategories();
+        tagViewModel.loadAllTags();
     }
 
     private void setupCategorySpinner() {
@@ -172,6 +189,60 @@ public class NoteEditFragment extends Fragment {
                 lockTextView.setText("锁定笔记");
             }
         });
+
+        // Reminder functionality
+        LinearLayout reminderSetting = view.findViewById(R.id.reminderSetting);
+        TextView reminderTextView = view.findViewById(R.id.reminderTextView);
+
+        reminderSetting.setOnClickListener(v -> {
+            if (noteId == -1) {
+                Toast.makeText(getContext(), "请先保存笔记", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            showDateTimePicker((year, month, day, hour, minute) -> {
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(year, month, day, hour, minute, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+                reminderTime = calendar.getTimeInMillis();
+
+                Note currentNote = noteViewModel.getCurrentNote().getValue();
+                if (currentNote != null) {
+                    currentNote.setReminderTime(reminderTime);
+                    noteViewModel.updateNote(currentNote);
+                    ReminderHelper.setReminder(requireContext(), currentNote.getId(),
+                            currentNote.getTitle(), reminderTime);
+
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+                    reminderTextView.setText("提醒: " + sdf.format(new Date(reminderTime)));
+                    Toast.makeText(getContext(), "提醒已设置", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        if (noteId != -1) {
+            noteViewModel.getCurrentNote().observe(getViewLifecycleOwner(), note -> {
+                if (note != null && note.getReminderTime() > 0) {
+                    reminderTime = note.getReminderTime();
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+                    reminderTextView.setText("提醒: " + sdf.format(new Date(reminderTime)));
+                }
+            });
+        }
+
+        // Tag functionality
+        ChipGroup tagChipGroup = view.findViewById(R.id.tagChipGroup);
+        android.widget.ImageButton addTagButton = view.findViewById(R.id.addTagButton);
+
+        addTagButton.setOnClickListener(v -> showAddTagDialog(tagChipGroup));
+
+        if (noteId != -1) {
+            noteViewModel.getCurrentNote().observe(getViewLifecycleOwner(), note -> {
+                if (note != null) {
+                    selectedTags = tagViewModel.getTagsForNote(note.getId());
+                    updateTagChips(tagChipGroup);
+                }
+            });
+        }
     }
 
     private void loadNote() {
@@ -221,10 +292,12 @@ public class NoteEditFragment extends Fragment {
         note.setUpdatedAt(System.currentTimeMillis());
         note.setLocked(isLocked);
         note.setPassword(notePassword);
+        note.setReminderTime(reminderTime);
 
         if (noteId != -1) {
             note.setId(noteId);
             noteViewModel.updateNote(note);
+            tagViewModel.setTagsForNote(noteId, selectedTags);
             Toast.makeText(getContext(), "笔记已更新", Toast.LENGTH_SHORT).show();
         } else {
             note.setCreatedAt(System.currentTimeMillis());
@@ -259,5 +332,88 @@ public class NoteEditFragment extends Fragment {
                 .setNegativeButton("取消", (dialog, which) -> onCancel.run())
                 .setOnCancelListener(dialog -> onCancel.run())
                 .show();
+    }
+
+    private interface OnDateTimeSelectedListener {
+        void onDateTimeSelected(int year, int month, int day, int hour, int minute);
+    }
+
+    private void showDateTimePicker(OnDateTimeSelectedListener listener) {
+        Calendar now = Calendar.getInstance();
+        new android.app.DatePickerDialog(requireContext(), (view, year, month, dayOfMonth) -> {
+            new android.app.TimePickerDialog(requireContext(), (view1, hourOfDay, minute) -> {
+                listener.onDateTimeSelected(year, month, dayOfMonth, hourOfDay, minute);
+            }, now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE), true).show();
+        }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    private void showAddTagDialog(ChipGroup chipGroup) {
+        List<Tag> allTags = tagViewModel.getAllTags().getValue();
+        if (allTags == null) allTags = new ArrayList<>();
+
+        String[] tagNames = new String[allTags.size()];
+        boolean[] checkedItems = new boolean[allTags.size()];
+
+        for (int i = 0; i < allTags.size(); i++) {
+            tagNames[i] = allTags.get(i).getName();
+            checkedItems[i] = selectedTags.contains(allTags.get(i).getName());
+        }
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("选择标签")
+                .setMultiChoiceItems(tagNames, checkedItems, (dialog, which, isChecked) -> {
+                    checkedItems[which] = isChecked;
+                })
+                .setPositiveButton("确定", (dialog, which) -> {
+                    selectedTags.clear();
+                    for (int i = 0; i < checkedItems.length; i++) {
+                        if (checkedItems[i]) {
+                            selectedTags.add(tagNames[i]);
+                        }
+                    }
+                    updateTagChips(chipGroup);
+                })
+                .setNegativeButton("取消", null)
+                .setNeutralButton("新建标签", (dialog, which) -> {
+                    showCreateTagDialog(chipGroup);
+                })
+                .show();
+    }
+
+    private void showCreateTagDialog(ChipGroup chipGroup) {
+        EditText editText = new EditText(getContext());
+        editText.setHint("标签名称");
+        editText.setPadding(64, 32, 64, 16);
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("新建标签")
+                .setView(editText)
+                .setPositiveButton("创建", (dialog, which) -> {
+                    String name = editText.getText().toString().trim();
+                    if (!name.isEmpty() && !tagViewModel.isTagExists(name)) {
+                        Tag tag = new Tag(name, "#6200EE");
+                        tagViewModel.insertTag(tag);
+                        selectedTags.add(name);
+                        updateTagChips(chipGroup);
+                    } else if (tagViewModel.isTagExists(name)) {
+                        Toast.makeText(getContext(), "标签已存在", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void updateTagChips(ChipGroup chipGroup) {
+        chipGroup.removeAllViews();
+        for (String tagName : selectedTags) {
+            com.google.android.material.chip.Chip chip = new com.google.android.material.chip.Chip(requireContext());
+            chip.setText(tagName);
+            chip.setCloseIconVisible(true);
+            chip.setOnCloseIconClickListener(v -> {
+                selectedTags.remove(tagName);
+                updateTagChips(chipGroup);
+            });
+            chipGroup.addView(chip);
+        }
     }
 }

@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -24,6 +25,7 @@ import com.example.notemaster.model.Category;
 import com.example.notemaster.model.Note;
 import com.example.notemaster.viewmodel.CategoryViewModel;
 import com.example.notemaster.viewmodel.NoteViewModel;
+import com.example.notemaster.viewmodel.TagViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import java.util.List;
 public class NoteListFragment extends Fragment {
     private NoteViewModel noteViewModel;
     private CategoryViewModel categoryViewModel;
+    private TagViewModel tagViewModel;
     private ArrayAdapter<String> categoryAdapter;
     private NoteAdapter noteAdapter;
     private EditText searchEditText;
@@ -87,11 +90,47 @@ public class NoteListFragment extends Fragment {
                 showNoteOptionsDialog(note);
             }
         });
+
+        ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(
+                ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                int fromPosition = viewHolder.getAdapterPosition();
+                int toPosition = target.getAdapterPosition();
+                noteAdapter.onItemMove(fromPosition, toPosition);
+                return true;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+            }
+
+            @Override
+            public void clearView(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder) {
+                super.clearView(recyclerView, viewHolder);
+                List<Note> currentNotes = noteAdapter.getNotes();
+                for (int i = 0; i < currentNotes.size(); i++) {
+                    Note note = currentNotes.get(i);
+                    if (note.getSortOrder() != i) {
+                        noteViewModel.updateNoteOrder(note.getId(), i);
+                    }
+                }
+            }
+        };
+
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(callback);
+        itemTouchHelper.attachToRecyclerView(notesRecyclerView);
     }
 
     private void setupViewModel() {
         noteViewModel = new ViewModelProvider(this).get(NoteViewModel.class);
         categoryViewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
+        tagViewModel = new ViewModelProvider(this).get(TagViewModel.class);
+        tagViewModel.loadAllTags();
+        noteAdapter.setTagViewModel(tagViewModel);
         
         noteViewModel.getAllNotes().observe(getViewLifecycleOwner(), notes -> {
             noteAdapter.setNotes(notes);

@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.notemaster.R;
 import com.example.notemaster.model.Note;
+import com.example.notemaster.viewmodel.TagViewModel;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import java.util.Locale;
 public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
     private List<Note> notes = new ArrayList<>();
     private OnNoteClickListener listener;
+    private TagViewModel tagViewModel;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
 
     public interface OnNoteClickListener {
@@ -32,9 +34,23 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         this.listener = listener;
     }
 
+    public void setTagViewModel(TagViewModel tagViewModel) {
+        this.tagViewModel = tagViewModel;
+    }
+
     public void setNotes(List<Note> notes) {
         this.notes = notes;
         notifyDataSetChanged();
+    }
+
+    public void onItemMove(int fromPosition, int toPosition) {
+        Note movedNote = notes.remove(fromPosition);
+        notes.add(toPosition, movedNote);
+        notifyItemMoved(fromPosition, toPosition);
+    }
+
+    public List<Note> getNotes() {
+        return notes;
     }
 
     @NonNull
@@ -62,6 +78,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         private TextView categoryTextView;
         private TextView updatedAtTextView;
         private ImageView pinnedIcon;
+        private com.google.android.material.chip.ChipGroup tagChipGroup;
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -70,6 +87,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             categoryTextView = itemView.findViewById(R.id.categoryTextView);
             updatedAtTextView = itemView.findViewById(R.id.updatedAtTextView);
             pinnedIcon = itemView.findViewById(R.id.pinnedIcon);
+            tagChipGroup = itemView.findViewById(R.id.noteTagChipGroup);
 
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
@@ -117,6 +135,22 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
             // 置顶图标
             pinnedIcon.setVisibility(note.isPinned() ? View.VISIBLE : View.GONE);
+
+            // 标签
+            tagChipGroup.removeAllViews();
+            if (tagViewModel != null) {
+                List<String> tags = tagViewModel.getTagsForNote(note.getId());
+                for (String tagName : tags) {
+                    com.google.android.material.chip.Chip chip = new com.google.android.material.chip.Chip(itemView.getContext());
+                    chip.setText(tagName);
+                    chip.setClickable(false);
+                    chip.setTextSize(10);
+                    tagChipGroup.addView(chip);
+                }
+                tagChipGroup.setVisibility(tags.isEmpty() ? View.GONE : View.VISIBLE);
+            } else {
+                tagChipGroup.setVisibility(View.GONE);
+            }
         }
     }
 }
