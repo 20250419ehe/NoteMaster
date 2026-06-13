@@ -194,6 +194,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/todoRecyclerView" />
 
+    <include
+        android:id="@+id/richTextToolbar"
+        layout="@layout/layout_rich_text_toolbar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider" />
+
     <EditText
         android:id="@+id/contentEditText"
         android:layout_width="0dp"
@@ -201,12 +208,12 @@
         android:layout_margin="16dp"
         android:gravity="top"
         android:hint="开始输入笔记内容..."
-        android:inputType="textMultiLine"
+        android:inputType="textMultiLine|textNoSuggestions"
         android:textSize="16sp"
         app:layout_constraintBottom_toTopOf="@id/fabSave"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/divider" />
+        app:layout_constraintTop_toBottomOf="@id/richTextToolbar" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabPin"

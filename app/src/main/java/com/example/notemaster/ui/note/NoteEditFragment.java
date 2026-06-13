@@ -1,6 +1,7 @@
 package com.example.notemaster.ui.note;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -19,12 +20,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.notemaster.util.ReminderHelper;
+import com.example.notemaster.util.RichTextUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -65,6 +69,18 @@ public class NoteEditFragment extends Fragment {
     private List<String> selectedTags = new ArrayList<>();
     private TodoAdapter todoAdapter;
     private List<TodoItem> todoItems = new ArrayList<>();
+    private LinearLayout richTextToolbar;
+
+    private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                    Uri imageUri = result.getData().getData();
+                    if (imageUri != null) {
+                        insertImage(imageUri);
+                    }
+                }
+            });
 
     @Nullable
     @Override
@@ -374,6 +390,44 @@ public class NoteEditFragment extends Fragment {
                     todoAdapter.setTodoItems(todoItems);
                 }
             });
+        }
+
+        // Rich text toolbar
+        richTextToolbar = view.findViewById(R.id.richTextToolbar);
+        setupRichTextToolbar(view);
+    }
+
+    private void setupRichTextToolbar(View view) {
+        view.findViewById(R.id.btnBold).setOnClickListener(v -> RichTextUtils.toggleBold(contentEditText));
+        view.findViewById(R.id.btnItalic).setOnClickListener(v -> RichTextUtils.toggleItalic(contentEditText));
+        view.findViewById(R.id.btnUnderline).setOnClickListener(v -> RichTextUtils.toggleUnderline(contentEditText));
+        view.findViewById(R.id.btnHeading).setOnClickListener(v -> RichTextUtils.toggleHeading(contentEditText));
+        view.findViewById(R.id.btnQuote).setOnClickListener(v -> RichTextUtils.toggleQuote(contentEditText));
+        view.findViewById(R.id.btnBulletList).setOnClickListener(v -> RichTextUtils.toggleBulletList(contentEditText));
+        view.findViewById(R.id.btnNumberedList).setOnClickListener(v -> RichTextUtils.toggleNumberedList(contentEditText));
+        view.findViewById(R.id.btnImage).setOnClickListener(v -> pickImage());
+
+        contentEditText.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                richTextToolbar.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
+    private void pickImage() {
+        Intent intent = new Intent(Intent.ACTION_PICK);
+        intent.setType("image/*");
+        imagePickerLauncher.launch(intent);
+    }
+
+    private void insertImage(Uri imageUri) {
+        try {
+            String imageMarkdown = "\n![图片](" + imageUri.toString() + ")\n";
+            int start = contentEditText.getSelectionStart();
+            contentEditText.getText().insert(start, imageMarkdown);
+            Toast.makeText(getContext(), "图片已插入", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "插入图片失败", Toast.LENGTH_SHORT).show();
         }
     }
 

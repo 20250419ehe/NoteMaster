@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/richTextToolbar"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="#F5F5F5"
+    android:paddingHorizontal="8dp"
+    android:visibility="gone">
+
+    <ImageButton
+        android:id="@+id/btnBold"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_bold"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="加粗"
+        android:scaleType="centerInside"
+        android:layout_marginEnd="4dp" />
+
+    <ImageButton
+        android:id="@+id/btnItalic"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_italic"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="斜体"
+        android:scaleType="centerInside"
+        android:layout_marginEnd="4dp" />
+
+    <ImageButton
+        android:id="@+id/btnUnderline"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_underline"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="下划线"
+        android:scaleType="centerInside"
+        android:layout_marginEnd="4dp" />
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:background="#CCCCCC"
+        android:layout_marginHorizontal="4dp" />
+
+    <ImageButton
+        android:id="@+id/btnBulletList"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_list_bullet"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="无序列表"
+        android:scaleType="centerInside"
+        android:layout_marginEnd="4dp" />
+
+    <ImageButton
+        android:id="@+id/btnNumberedList"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_list_numbered"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="有序列表"
+        android:scaleType="centerInside"
+        android:layout_marginEnd="4dp" />
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:background="#CCCCCC"
+        android:layout_marginHorizontal="4dp" />
+
+    <ImageButton
+        android:id="@+id/btnHeading"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_heading"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="标题"
+        android:scaleType="centerInside"
+        android:layout_marginEnd="4dp" />
+
+    <ImageButton
+        android:id="@+id/btnQuote"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_quote"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="引用"
+        android:scaleType="centerInside"
+        android:layout_marginEnd="4dp" />
+
+    <View
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <ImageButton
+        android:id="@+id/btnImage"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_image"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="插入图片"
+        android:scaleType="centerInside" />
+
+</LinearLayout>
