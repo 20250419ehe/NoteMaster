@@ -6,13 +6,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
@@ -42,6 +45,9 @@ public class NoteListFragment extends Fragment {
     private RecyclerView notesRecyclerView;
     private TextView emptyStateTextView;
     private FloatingActionButton fabAddNote;
+    private LinearLayout batchActionBar;
+    private TextView selectedCountTextView;
+    private CheckBox selectAllCheckBox;
     private String currentCategory = "全部";
     private String currentSearchQuery = "";
 
@@ -60,6 +66,7 @@ public class NoteListFragment extends Fragment {
         setupRecyclerView();
         setupViewModel();
         setupListeners();
+        setupBatchActionBar(view);
     }
 
     private void initViews(View view) {
@@ -68,6 +75,9 @@ public class NoteListFragment extends Fragment {
         notesRecyclerView = view.findViewById(R.id.notesRecyclerView);
         emptyStateTextView = view.findViewById(R.id.emptyStateTextView);
         fabAddNote = view.findViewById(R.id.fabAddNote);
+        batchActionBar = view.findViewById(R.id.batchActionBar);
+        selectedCountTextView = view.findViewById(R.id.selectedCountTextView);
+        selectAllCheckBox = view.findViewById(R.id.selectAllCheckBox);
     }
 
     private void setupRecyclerView() {
@@ -78,7 +88,9 @@ public class NoteListFragment extends Fragment {
         noteAdapter.setOnNoteClickListener(new NoteAdapter.OnNoteClickListener() {
             @Override
             public void onNoteClick(Note note) {
-                if (note.isLocked()) {
+                if (noteAdapter.isMultiSelectMode()) {
+                    noteAdapter.toggleSelection(note.getId());
+                } else if (note.isLocked()) {
                     showUnlockDialog(note);
                 } else {
                     navigateToEdit(note.getId());
@@ -87,7 +99,16 @@ public class NoteListFragment extends Fragment {
 
             @Override
             public void onNoteLongClick(Note note) {
-                showNoteOptionsDialog(note);
+                if (!noteAdapter.isMultiSelectMode()) {
+                    enterMultiSelectMode();
+                    noteAdapter.toggleSelection(note.getId());
+                }
+            }
+        });
+
+        noteAdapter.setOnSelectionChangedListener(count -> {
+            if (noteAdapter.isMultiSelectMode()) {
+                updateBatchActionBar(count);
             }
         });
 
@@ -97,6 +118,7 @@ public class NoteListFragment extends Fragment {
             public boolean onMove(@NonNull RecyclerView recyclerView,
                                   @NonNull RecyclerView.ViewHolder viewHolder,
                                   @NonNull RecyclerView.ViewHolder target) {
+                if (noteAdapter.isMultiSelectMode()) return false;
                 int fromPosition = viewHolder.getAdapterPosition();
                 int toPosition = target.getAdapterPosition();
                 noteAdapter.onItemMove(fromPosition, toPosition);
@@ -187,6 +209,101 @@ public class NoteListFragment extends Fragment {
         });
     }
 
+    private void setupBatchActionBar(View view) {
+        view.findViewById(R.id.btnCloseSelection).setOnClickListener(v -> exitMultiSelectMode());
+
+        selectAllCheckBox.setOnClickListener(v -> {
+            if (selectAllCheckBox.isChecked()) {
+                noteAdapter.selectAll();
+            } else {
+                noteAdapter.deselectAll();
+            }
+        });
+
+        view.findViewById(R.id.btnBatchDelete).setOnClickListener(v -> batchDelete());
+
+        view.findViewById(R.id.btnBatchMove).setOnClickListener(v -> batchMoveToCategory());
+    }
+
+    private void enterMultiSelectMode() {
+        noteAdapter.enterMultiSelectMode();
+        batchActionBar.setVisibility(View.VISIBLE);
+        fabAddNote.setVisibility(View.GONE);
+        searchEditText.setEnabled(false);
+        categorySpinner.setEnabled(false);
+        updateBatchActionBar(0);
+    }
+
+    private void exitMultiSelectMode() {
+        noteAdapter.exitMultiSelectMode();
+        batchActionBar.setVisibility(View.GONE);
+        fabAddNote.setVisibility(View.VISIBLE);
+        searchEditText.setEnabled(true);
+        categorySpinner.setEnabled(true);
+        selectAllCheckBox.setChecked(false);
+    }
+
+    private void updateBatchActionBar(int count) {
+        selectedCountTextView.setText("已选择 " + count + " 项");
+        selectAllCheckBox.setChecked(noteAdapter.isAllSelected());
+    }
+
+    private void batchDelete() {
+        List<Long> selectedIds = noteAdapter.getSelectedNoteIds();
+        if (selectedIds.isEmpty()) {
+            Toast.makeText(getContext(), "请先选择笔记", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("批量删除")
+                .setMessage("确定要删除选中的 " + selectedIds.size() + " 条笔记吗？")
+                .setPositiveButton("删除", (dialog, which) -> {
+                    for (Long noteId : selectedIds) {
+                        noteViewModel.deleteNote(noteId);
+                    }
+                    exitMultiSelectMode();
+                    Toast.makeText(getContext(), "已删除 " + selectedIds.size() + " 条笔记", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void batchMoveToCategory() {
+        List<Long> selectedIds = noteAdapter.getSelectedNoteIds();
+        if (selectedIds.isEmpty()) {
+            Toast.makeText(getContext(), "请先选择笔记", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<Category> categories = categoryViewModel.getAllCategories().getValue();
+        if (categories == null || categories.isEmpty()) {
+            Toast.makeText(getContext(), "没有可选分类", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] categoryNames = new String[categories.size()];
+        for (int i = 0; i < categories.size(); i++) {
+            categoryNames[i] = categories.get(i).getName();
+        }
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("移动到分类")
+                .setItems(categoryNames, (dialog, which) -> {
+                    String targetCategory = categoryNames[which];
+                    for (Long noteId : selectedIds) {
+                        Note note = noteViewModel.getNoteById(noteId);
+                        if (note != null) {
+                            note.setCategory(targetCategory);
+                            noteViewModel.updateNote(note);
+                        }
+                    }
+                    exitMultiSelectMode();
+                    Toast.makeText(getContext(), "已移动 " + selectedIds.size() + " 条笔记到 " + targetCategory, Toast.LENGTH_SHORT).show();
+                })
+                .show();
+    }
+
     private void applyFilters() {
         boolean categoryAll = currentCategory.equals("全部") || currentCategory.isEmpty();
         boolean searchEmpty = currentSearchQuery.isEmpty();
@@ -210,7 +327,7 @@ public class NoteListFragment extends Fragment {
             options = new String[]{"置顶", "删除"};
         }
 
-        new android.app.AlertDialog.Builder(requireContext())
+        new AlertDialog.Builder(requireContext())
                 .setTitle(note.getTitle())
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
@@ -231,7 +348,7 @@ public class NoteListFragment extends Fragment {
         passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         passwordInput.setPadding(64, 32, 64, 16);
 
-        new android.app.AlertDialog.Builder(requireContext())
+        new AlertDialog.Builder(requireContext())
                 .setTitle("笔记已锁定")
                 .setView(passwordInput)
                 .setPositiveButton("解锁", (dialog, which) -> {
@@ -254,7 +371,7 @@ public class NoteListFragment extends Fragment {
     }
 
     private void showDeleteDialog(Note note) {
-        new android.app.AlertDialog.Builder(requireContext())
+        new AlertDialog.Builder(requireContext())
                 .setTitle("删除笔记")
                 .setMessage("确定要删除\"" + note.getTitle() + "\"吗？")
                 .setPositiveButton("删除", (dialog, which) -> {

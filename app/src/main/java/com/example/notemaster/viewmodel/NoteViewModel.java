@@ -53,6 +53,10 @@ public class NoteViewModel extends AndroidViewModel {
         currentNote.setValue(note);
     }
 
+    public Note getNoteById(long noteId) {
+        return noteRepository.getNoteById(noteId);
+    }
+
     public void insertNote(Note note) {
         noteRepository.insertNote(note);
         loadAllNotes();

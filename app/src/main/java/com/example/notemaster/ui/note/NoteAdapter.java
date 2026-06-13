@@ -3,6 +3,7 @@ package com.example.notemaster.ui.note;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -17,22 +18,36 @@ import com.example.notemaster.viewmodel.TagViewModel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
     private List<Note> notes = new ArrayList<>();
     private OnNoteClickListener listener;
+    private OnSelectionChangedListener selectionListener;
     private TagViewModel tagViewModel;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+
+    private boolean multiSelectMode = false;
+    private Set<Long> selectedNoteIds = new HashSet<>();
 
     public interface OnNoteClickListener {
         void onNoteClick(Note note);
         void onNoteLongClick(Note note);
     }
 
+    public interface OnSelectionChangedListener {
+        void onSelectionChanged(int count);
+    }
+
     public void setOnNoteClickListener(OnNoteClickListener listener) {
         this.listener = listener;
+    }
+
+    public void setOnSelectionChangedListener(OnSelectionChangedListener listener) {
+        this.selectionListener = listener;
     }
 
     public void setTagViewModel(TagViewModel tagViewModel) {
@@ -52,6 +67,68 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     public List<Note> getNotes() {
         return notes;
+    }
+
+    public void enterMultiSelectMode() {
+        multiSelectMode = true;
+        selectedNoteIds.clear();
+        notifyDataSetChanged();
+    }
+
+    public void exitMultiSelectMode() {
+        multiSelectMode = false;
+        selectedNoteIds.clear();
+        notifyDataSetChanged();
+        if (selectionListener != null) {
+            selectionListener.onSelectionChanged(0);
+        }
+    }
+
+    public void toggleSelection(long noteId) {
+        if (selectedNoteIds.contains(noteId)) {
+            selectedNoteIds.remove(noteId);
+        } else {
+            selectedNoteIds.add(noteId);
+        }
+        notifyDataSetChanged();
+        if (selectionListener != null) {
+            selectionListener.onSelectionChanged(selectedNoteIds.size());
+        }
+    }
+
+    public void selectAll() {
+        selectedNoteIds.clear();
+        for (Note note : notes) {
+            selectedNoteIds.add(note.getId());
+        }
+        notifyDataSetChanged();
+        if (selectionListener != null) {
+            selectionListener.onSelectionChanged(selectedNoteIds.size());
+        }
+    }
+
+    public void deselectAll() {
+        selectedNoteIds.clear();
+        notifyDataSetChanged();
+        if (selectionListener != null) {
+            selectionListener.onSelectionChanged(0);
+        }
+    }
+
+    public boolean isAllSelected() {
+        return selectedNoteIds.size() == notes.size() && !notes.isEmpty();
+    }
+
+    public List<Long> getSelectedNoteIds() {
+        return new ArrayList<>(selectedNoteIds);
+    }
+
+    public int getSelectedCount() {
+        return selectedNoteIds.size();
+    }
+
+    public boolean isMultiSelectMode() {
+        return multiSelectMode;
     }
 
     @NonNull
@@ -82,6 +159,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         private ImageView noteImageView;
         private com.google.android.material.chip.ChipGroup tagChipGroup;
         private TextView todoProgressTextView;
+        private CheckBox selectCheckBox;
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -93,17 +171,24 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             noteImageView = itemView.findViewById(R.id.noteImageView);
             tagChipGroup = itemView.findViewById(R.id.noteTagChipGroup);
             todoProgressTextView = itemView.findViewById(R.id.todoProgressTextView);
+            selectCheckBox = itemView.findViewById(R.id.selectCheckBox);
 
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
-                if (listener != null && position != RecyclerView.NO_POSITION) {
+                if (position == RecyclerView.NO_POSITION) return;
+
+                if (multiSelectMode) {
+                    toggleSelection(notes.get(position).getId());
+                } else if (listener != null) {
                     listener.onNoteClick(notes.get(position));
                 }
             });
 
             itemView.setOnLongClickListener(v -> {
                 int position = getAdapterPosition();
-                if (listener != null && position != RecyclerView.NO_POSITION) {
+                if (position == RecyclerView.NO_POSITION) return false;
+
+                if (!multiSelectMode && listener != null) {
                     listener.onNoteLongClick(notes.get(position));
                     return true;
                 }
@@ -113,8 +198,16 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
         public void bind(Note note) {
             titleTextView.setText(note.getTitle());
-            
-            // 内容预览（去除HTML标签和TODO部分）
+
+            if (multiSelectMode) {
+                selectCheckBox.setVisibility(View.VISIBLE);
+                selectCheckBox.setChecked(selectedNoteIds.contains(note.getId()));
+                itemView.setActivated(selectedNoteIds.contains(note.getId()));
+            } else {
+                selectCheckBox.setVisibility(View.GONE);
+                itemView.setActivated(false);
+            }
+
             String contentPreview = note.getContent();
             String firstImageUrl = null;
             if (contentPreview != null) {
@@ -143,7 +236,6 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                 contentPreviewTextView.setVisibility(View.GONE);
             }
 
-            // 图片预览
             if (firstImageUrl != null && !firstImageUrl.isEmpty()) {
                 Glide.with(itemView.getContext())
                         .load(firstImageUrl)
@@ -155,7 +247,6 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                 noteImageView.setVisibility(View.GONE);
             }
 
-            // 分类
             if (note.getCategory() != null && !note.getCategory().isEmpty()) {
                 categoryTextView.setText(note.getCategory());
                 categoryTextView.setVisibility(View.VISIBLE);
@@ -163,13 +254,9 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                 categoryTextView.setVisibility(View.GONE);
             }
 
-            // 更新时间
             updatedAtTextView.setText(dateFormat.format(new Date(note.getUpdatedAt())));
-
-            // 置顶图标
             pinnedIcon.setVisibility(note.isPinned() ? View.VISIBLE : View.GONE);
 
-            // 标签
             tagChipGroup.removeAllViews();
             if (tagViewModel != null) {
                 List<String> tags = tagViewModel.getTagsForNote(note.getId());
@@ -185,7 +272,6 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                 tagChipGroup.setVisibility(View.GONE);
             }
 
-            // 待办进度
             String content = note.getContent();
             if (content != null && content.contains("[TODO]")) {
                 int total = 0;

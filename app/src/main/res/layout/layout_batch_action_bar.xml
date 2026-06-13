@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/batchActionBar"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="?attr/colorPrimary"
+    android:paddingHorizontal="8dp"
+    android:visibility="gone">
+
+    <ImageButton
+        android:id="@+id/btnCloseSelection"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="取消"
+        android:tint="@android:color/white" />
+
+    <TextView
+        android:id="@+id/selectedCountTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="已选择 0 项"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:layout_marginStart="8dp" />
+
+    <CheckBox
+        android:id="@+id/selectAllCheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="全选"
+        android:textColor="@android:color/white"
+        android:layout_marginEnd="8dp" />
+
+    <ImageButton
+        android:id="@+id/btnBatchDelete"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_delete"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="删除"
+        android:tint="@android:color/white" />
+
+    <ImageButton
+        android:id="@+id/btnBatchMove"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_sort_by_size"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="移动分类"
+        android:tint="@android:color/white" />
+
+</LinearLayout>

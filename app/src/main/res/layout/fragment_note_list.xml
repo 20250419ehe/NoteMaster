@@ -1,73 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context=".ui.note.NoteListFragment">
+
+    <!-- 批量操作栏 -->
+    <include
+        android:id="@+id/batchActionBar"
+        layout="@layout/layout_batch_action_bar" />
 
     <!-- 顶部工具栏 -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         app:title="NoteMaster"
         app:titleTextColor="@android:color/white" />
 
     <!-- 搜索框 -->
     <EditText
         android:id="@+id/searchEditText"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:hint="搜索笔记..."
         android:inputType="text"
         android:padding="12dp"
-        android:background="@drawable/search_background"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar" />
+        android:background="@drawable/search_background" />
 
     <!-- 分类筛选 -->
     <Spinner
         android:id="@+id/categorySpinner"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
-        android:prompt="@string/category_filter"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/searchEditText" />
+        android:prompt="@string/category_filter" />
 
     <!-- 笔记列表 -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/notesRecyclerView"
-        android:layout_width="0dp"
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toTopOf="@id/fabAddNote"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/categorySpinner"
-        tools:listitem="@layout/item_note" />
+        android:layout_weight="1">
 
-    <!-- 空状态提示 -->
-    <TextView
-        android:id="@+id/emptyStateTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="没有笔记，点击+添加"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/notesRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp"
+            tools:listitem="@layout/item_note" />
+
+        <!-- 空状态提示 -->
+        <TextView
+            android:id="@+id/emptyStateTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="没有笔记，点击+添加"
+            android:textSize="16sp"
+            android:visibility="gone"
+            android:layout_gravity="center" />
+    </FrameLayout>
 
     <!-- 添加笔记按钮 -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -75,9 +71,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
+        android:layout_gravity="bottom|end"
         android:contentDescription="添加笔记"
-        android:src="@android:drawable/ic_input_add"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:src="@android:drawable/ic_input_add" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>
