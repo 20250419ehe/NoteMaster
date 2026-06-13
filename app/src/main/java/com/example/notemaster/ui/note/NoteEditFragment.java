@@ -1,7 +1,11 @@
 package com.example.notemaster.ui.note;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -67,6 +71,7 @@ public class NoteEditFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        setHasOptionsMenu(true);
 
         ReminderHelper.createNotificationChannel(requireContext());
 
@@ -96,6 +101,87 @@ public class NoteEditFragment extends Fragment {
         toolbar.setTitle(noteId == -1 ? "新建笔记" : "编辑笔记");
         toolbar.setNavigationOnClickListener(v ->
                 Navigation.findNavController(v).navigateUp());
+        toolbar.inflateMenu(R.menu.edit_menu);
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_share) {
+                shareNote();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void shareNote() {
+        String title = titleEditText.getText().toString().trim();
+        String content = contentEditText.getText().toString().trim();
+
+        if (title.isEmpty() && content.isEmpty()) {
+            Toast.makeText(getContext(), "笔记内容为空", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] options = {"分享文本", "导出为文件"};
+        new AlertDialog.Builder(requireContext())
+                .setTitle("分享笔记")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        shareAsText(title, content);
+                    } else {
+                        exportToFile(title, content);
+                    }
+                })
+                .show();
+    }
+
+    private void shareAsText(String title, String content) {
+        String shareText = title;
+        if (!content.isEmpty()) {
+            shareText += "\n\n" + content;
+        }
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, title);
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        startActivity(Intent.createChooser(shareIntent, "分享笔记"));
+    }
+
+    private void exportToFile(String title, String content) {
+        try {
+            String fileName = title.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fa5_-]", "_");
+            if (fileName.length() > 50) {
+                fileName = fileName.substring(0, 50);
+            }
+            fileName += ".txt";
+
+            java.io.File exportDir = new java.io.File(requireContext().getFilesDir(), "exports");
+            if (!exportDir.exists()) {
+                exportDir.mkdirs();
+            }
+
+            java.io.File file = new java.io.File(exportDir, fileName);
+            java.io.FileWriter writer = new java.io.FileWriter(file);
+            writer.write("标题: " + title + "\n\n");
+            writer.write(content);
+            writer.close();
+
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_SUBJECT, title);
+
+            android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(
+                    requireContext(),
+                    requireContext().getPackageName() + ".fileprovider",
+                    file
+            );
+            intent.putExtra(Intent.EXTRA_STREAM, uri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(intent, "导出笔记"));
+
+            Toast.makeText(getContext(), "已导出: " + fileName, Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setupViewModel() {
