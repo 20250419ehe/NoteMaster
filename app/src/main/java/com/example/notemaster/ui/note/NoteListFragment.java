@@ -19,7 +19,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.notemaster.R;
+import com.example.notemaster.model.Category;
 import com.example.notemaster.model.Note;
+import com.example.notemaster.viewmodel.CategoryViewModel;
 import com.example.notemaster.viewmodel.NoteViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -28,6 +30,8 @@ import java.util.List;
 
 public class NoteListFragment extends Fragment {
     private NoteViewModel noteViewModel;
+    private CategoryViewModel categoryViewModel;
+    private ArrayAdapter<String> categoryAdapter;
     private NoteAdapter noteAdapter;
     private EditText searchEditText;
     private Spinner categorySpinner;
@@ -88,12 +92,29 @@ public class NoteListFragment extends Fragment {
 
     private void setupViewModel() {
         noteViewModel = new ViewModelProvider(this).get(NoteViewModel.class);
+        categoryViewModel = new ViewModelProvider(this).get(CategoryViewModel.class);
         
         noteViewModel.getAllNotes().observe(getViewLifecycleOwner(), notes -> {
             noteAdapter.setNotes(notes);
             emptyStateTextView.setVisibility(notes.isEmpty() ? View.VISIBLE : View.GONE);
             notesRecyclerView.setVisibility(notes.isEmpty() ? View.GONE : View.VISIBLE);
         });
+        
+        categoryViewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
+            List<String> categoryNames = new ArrayList<>();
+            categoryNames.add("全部");
+            if (categories != null) {
+                for (Category cat : categories) {
+                    categoryNames.add(cat.getName());
+                }
+            }
+            categoryAdapter = new ArrayAdapter<>(requireContext(),
+                    android.R.layout.simple_spinner_item, categoryNames);
+            categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            categorySpinner.setAdapter(categoryAdapter);
+        });
+        
+        categoryViewModel.loadAllCategories();
     }
 
     private void setupListeners() {
@@ -130,7 +151,7 @@ public class NoteListFragment extends Fragment {
                 if (category.equals("全部") || category.isEmpty()) {
                     noteViewModel.loadAllNotes();
                 } else {
-                    // TODO: 按分类筛选笔记
+                    noteViewModel.loadNotesByCategory(category);
                 }
             }
 

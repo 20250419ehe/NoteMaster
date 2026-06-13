@@ -52,4 +52,8 @@ public class NoteRepository {
     public void updateNoteOrder(long noteId, int newOrder) {
         noteDao.updateNoteOrder(noteId, newOrder);
     }
+
+    public List<Note> getNotesByCategory(String category) {
+        return noteDao.getNotesByCategory(category);
+    }
 }

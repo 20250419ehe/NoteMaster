@@ -88,4 +88,9 @@ public class NoteViewModel extends AndroidViewModel {
         noteRepository.updateNoteOrder(noteId, newOrder);
         loadAllNotes();
     }
+
+    public void loadNotesByCategory(String category) {
+        List<Note> notes = noteRepository.getNotesByCategory(category);
+        allNotes.setValue(notes);
+    }
 }
