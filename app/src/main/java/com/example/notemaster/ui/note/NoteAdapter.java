@@ -9,6 +9,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.notemaster.R;
 import com.example.notemaster.model.Note;
 import com.example.notemaster.viewmodel.TagViewModel;
@@ -78,6 +79,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         private TextView categoryTextView;
         private TextView updatedAtTextView;
         private ImageView pinnedIcon;
+        private ImageView noteImageView;
         private com.google.android.material.chip.ChipGroup tagChipGroup;
         private TextView todoProgressTextView;
 
@@ -88,6 +90,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             categoryTextView = itemView.findViewById(R.id.categoryTextView);
             updatedAtTextView = itemView.findViewById(R.id.updatedAtTextView);
             pinnedIcon = itemView.findViewById(R.id.pinnedIcon);
+            noteImageView = itemView.findViewById(R.id.noteImageView);
             tagChipGroup = itemView.findViewById(R.id.noteTagChipGroup);
             todoProgressTextView = itemView.findViewById(R.id.todoProgressTextView);
 
@@ -113,12 +116,20 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             
             // 内容预览（去除HTML标签和TODO部分）
             String contentPreview = note.getContent();
+            String firstImageUrl = null;
             if (contentPreview != null) {
                 int todoIndex = contentPreview.indexOf("[TODO]");
                 if (todoIndex > 0) {
                     contentPreview = contentPreview.substring(0, todoIndex);
                 }
-                contentPreview = contentPreview.replaceAll("<[^>]*>", "").trim();
+
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("!\\[图片\\]\\(([^)]+)\\)");
+                java.util.regex.Matcher matcher = pattern.matcher(contentPreview);
+                if (matcher.find()) {
+                    firstImageUrl = matcher.group(1);
+                }
+
+                contentPreview = contentPreview.replaceAll("!\\[图片\\]\\([^)]+\\)", "").replaceAll("<[^>]*>", "").trim();
                 if (contentPreview.length() > 100) {
                     contentPreview = contentPreview.substring(0, 100) + "...";
                 }
@@ -130,6 +141,18 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                 }
             } else {
                 contentPreviewTextView.setVisibility(View.GONE);
+            }
+
+            // 图片预览
+            if (firstImageUrl != null && !firstImageUrl.isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(firstImageUrl)
+                        .centerCrop()
+                        .placeholder(R.drawable.ic_image)
+                        .into(noteImageView);
+                noteImageView.setVisibility(View.VISIBLE);
+            } else {
+                noteImageView.setVisibility(View.GONE);
             }
 
             // 分类

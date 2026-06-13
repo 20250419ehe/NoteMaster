@@ -54,6 +54,19 @@
             app:layout_constraintTop_toBottomOf="@id/titleTextView"
             tools:text="笔记内容预览..." />
 
+        <!-- 图片预览 -->
+        <ImageView
+            android:id="@+id/noteImageView"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginTop="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:background="#F0F0F0"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/contentPreviewTextView"
+            tools:visibility="visible" />
+
         <!-- 分类标签 -->
         <TextView
             android:id="@+id/categoryTextView"
@@ -67,7 +80,7 @@
             android:textColor="@android:color/white"
             android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/contentPreviewTextView"
+            app:layout_constraintTop_toBottomOf="@id/noteImageView"
             tools:text="分类"
             tools:visibility="visible" />
 

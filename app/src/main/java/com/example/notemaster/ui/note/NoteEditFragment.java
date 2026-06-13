@@ -19,8 +19,10 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.notemaster.util.NoteTemplate;
 import com.example.notemaster.util.ReminderHelper;
 import com.example.notemaster.util.RichTextUtils;
+import com.example.notemaster.util.UndoRedoManager;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -70,6 +72,7 @@ public class NoteEditFragment extends Fragment {
     private TodoAdapter todoAdapter;
     private List<TodoItem> todoItems = new ArrayList<>();
     private LinearLayout richTextToolbar;
+    private UndoRedoManager undoRedoManager;
 
     private final ActivityResultLauncher<Intent> imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -127,9 +130,32 @@ public class NoteEditFragment extends Fragment {
             if (item.getItemId() == R.id.action_share) {
                 shareNote();
                 return true;
+            } else if (item.getItemId() == R.id.action_template) {
+                showTemplateDialog();
+                return true;
             }
             return false;
         });
+    }
+
+    private void showTemplateDialog() {
+        List<NoteTemplate> templates = NoteTemplate.getDefaultTemplates();
+        String[] templateNames = new String[templates.size()];
+        for (int i = 0; i < templates.size(); i++) {
+            templateNames[i] = templates.get(i).getName();
+        }
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("选择模板")
+                .setItems(templateNames, (dialog, which) -> {
+                    NoteTemplate selected = templates.get(which);
+                    if (!selected.getContent().isEmpty()) {
+                        contentEditText.setText(selected.getContent());
+                        contentEditText.setSelection(0);
+                    }
+                    Toast.makeText(getContext(), "已应用模板: " + selected.getName(), Toast.LENGTH_SHORT).show();
+                })
+                .show();
     }
 
     private void shareNote() {
@@ -398,6 +424,16 @@ public class NoteEditFragment extends Fragment {
     }
 
     private void setupRichTextToolbar(View view) {
+        undoRedoManager = new UndoRedoManager(contentEditText);
+
+        view.findViewById(R.id.btnUndo).setOnClickListener(v -> {
+            undoRedoManager.undo();
+        });
+
+        view.findViewById(R.id.btnRedo).setOnClickListener(v -> {
+            undoRedoManager.redo();
+        });
+
         view.findViewById(R.id.btnBold).setOnClickListener(v -> RichTextUtils.toggleBold(contentEditText));
         view.findViewById(R.id.btnItalic).setOnClickListener(v -> RichTextUtils.toggleItalic(contentEditText));
         view.findViewById(R.id.btnUnderline).setOnClickListener(v -> RichTextUtils.toggleUnderline(contentEditText));
