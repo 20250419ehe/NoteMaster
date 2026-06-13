@@ -79,6 +79,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         private TextView updatedAtTextView;
         private ImageView pinnedIcon;
         private com.google.android.material.chip.ChipGroup tagChipGroup;
+        private TextView todoProgressTextView;
 
         public NoteViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -88,6 +89,7 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
             updatedAtTextView = itemView.findViewById(R.id.updatedAtTextView);
             pinnedIcon = itemView.findViewById(R.id.pinnedIcon);
             tagChipGroup = itemView.findViewById(R.id.noteTagChipGroup);
+            todoProgressTextView = itemView.findViewById(R.id.todoProgressTextView);
 
             itemView.setOnClickListener(v -> {
                 int position = getAdapterPosition();
@@ -109,15 +111,23 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         public void bind(Note note) {
             titleTextView.setText(note.getTitle());
             
-            // 内容预览（去除HTML标签）
+            // 内容预览（去除HTML标签和TODO部分）
             String contentPreview = note.getContent();
             if (contentPreview != null) {
-                contentPreview = contentPreview.replaceAll("<[^>]*>", "");
+                int todoIndex = contentPreview.indexOf("[TODO]");
+                if (todoIndex > 0) {
+                    contentPreview = contentPreview.substring(0, todoIndex);
+                }
+                contentPreview = contentPreview.replaceAll("<[^>]*>", "").trim();
                 if (contentPreview.length() > 100) {
                     contentPreview = contentPreview.substring(0, 100) + "...";
                 }
-                contentPreviewTextView.setText(contentPreview);
-                contentPreviewTextView.setVisibility(View.VISIBLE);
+                if (!contentPreview.isEmpty()) {
+                    contentPreviewTextView.setText(contentPreview);
+                    contentPreviewTextView.setVisibility(View.VISIBLE);
+                } else {
+                    contentPreviewTextView.setVisibility(View.GONE);
+                }
             } else {
                 contentPreviewTextView.setVisibility(View.GONE);
             }
@@ -150,6 +160,38 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
                 tagChipGroup.setVisibility(tags.isEmpty() ? View.GONE : View.VISIBLE);
             } else {
                 tagChipGroup.setVisibility(View.GONE);
+            }
+
+            // 待办进度
+            String content = note.getContent();
+            if (content != null && content.contains("[TODO]")) {
+                int total = 0;
+                int completed = 0;
+                String[] lines = content.split("\n");
+                boolean inTodoSection = false;
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.equals("[TODO]")) {
+                        inTodoSection = true;
+                        continue;
+                    }
+                    if (inTodoSection) {
+                        if (line.startsWith("[x]") || line.startsWith("[ ]")) {
+                            total++;
+                            if (line.startsWith("[x]")) {
+                                completed++;
+                            }
+                        }
+                    }
+                }
+                if (total > 0) {
+                    todoProgressTextView.setText("待办: " + completed + "/" + total);
+                    todoProgressTextView.setVisibility(View.VISIBLE);
+                } else {
+                    todoProgressTextView.setVisibility(View.GONE);
+                }
+            } else {
+                todoProgressTextView.setVisibility(View.GONE);
             }
         }
     }

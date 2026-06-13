@@ -31,11 +31,14 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.notemaster.R;
 import com.example.notemaster.model.Category;
 import com.example.notemaster.model.Note;
 import com.example.notemaster.model.Tag;
+import com.example.notemaster.model.TodoItem;
 import com.example.notemaster.viewmodel.CategoryViewModel;
 import com.example.notemaster.viewmodel.NoteViewModel;
 import com.example.notemaster.viewmodel.TagViewModel;
@@ -60,6 +63,8 @@ public class NoteEditFragment extends Fragment {
     private String notePassword = "";
     private long reminderTime = 0;
     private List<String> selectedTags = new ArrayList<>();
+    private TodoAdapter todoAdapter;
+    private List<TodoItem> todoItems = new ArrayList<>();
 
     @Nullable
     @Override
@@ -329,6 +334,47 @@ public class NoteEditFragment extends Fragment {
                 }
             });
         }
+
+        // Todo functionality
+        RecyclerView todoRecyclerView = view.findViewById(R.id.todoRecyclerView);
+        android.widget.ImageButton addTodoButton = view.findViewById(R.id.addTodoButton);
+
+        todoAdapter = new TodoAdapter();
+        todoRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        todoRecyclerView.setAdapter(todoAdapter);
+
+        todoAdapter.setOnTodoActionListener(new TodoAdapter.OnTodoActionListener() {
+            @Override
+            public void onToggle(TodoItem item, int position) {
+                // Toggle handled in adapter
+            }
+
+            @Override
+            public void onDelete(TodoItem item, int position) {
+                todoItems.remove(position);
+                todoAdapter.removeItem(position);
+            }
+
+            @Override
+            public void onTextChanged(TodoItem item, String text) {
+                item.setText(text);
+            }
+        });
+
+        addTodoButton.setOnClickListener(v -> {
+            TodoItem newItem = new TodoItem("", false);
+            todoItems.add(newItem);
+            todoAdapter.addItem(newItem);
+        });
+
+        if (noteId != -1) {
+            noteViewModel.getCurrentNote().observe(getViewLifecycleOwner(), note -> {
+                if (note != null) {
+                    todoItems = parseTodosFromContent(note.getContent());
+                    todoAdapter.setTodoItems(todoItems);
+                }
+            });
+        }
     }
 
     private void loadNote() {
@@ -371,9 +417,11 @@ public class NoteEditFragment extends Fragment {
             return;
         }
 
+        String fullContent = buildContentWithTodos(content);
+
         Note note = new Note();
         note.setTitle(title);
-        note.setContent(content);
+        note.setContent(fullContent);
         note.setCategory(selectedCategory);
         note.setUpdatedAt(System.currentTimeMillis());
         note.setLocked(isLocked);
@@ -501,5 +549,55 @@ public class NoteEditFragment extends Fragment {
             });
             chipGroup.addView(chip);
         }
+    }
+
+    private List<TodoItem> parseTodosFromContent(String content) {
+        List<TodoItem> todos = new ArrayList<>();
+        if (content == null || content.isEmpty()) {
+            return todos;
+        }
+
+        String todoPrefix = "[TODO]";
+        int todoStart = content.indexOf(todoPrefix);
+        if (todoStart == -1) {
+            return todos;
+        }
+
+        String todoSection = content.substring(todoStart + todoPrefix.length());
+        String[] lines = todoSection.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) continue;
+
+            if (line.startsWith("[x]")) {
+                todos.add(new TodoItem(line.substring(3).trim(), true));
+            } else if (line.startsWith("[ ]")) {
+                todos.add(new TodoItem(line.substring(3).trim(), false));
+            }
+        }
+        return todos;
+    }
+
+    private String buildContentWithTodos(String content) {
+        String todoPrefix = "[TODO]";
+        int todoStart = content.indexOf(todoPrefix);
+        String baseContent = todoStart >= 0 ? content.substring(0, todoStart).trim() : content.trim();
+
+        if (todoItems.isEmpty()) {
+            return baseContent;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        if (!baseContent.isEmpty()) {
+            sb.append(baseContent);
+        }
+        sb.append("\n\n").append(todoPrefix).append("\n");
+
+        for (TodoItem item : todoItems) {
+            String checkbox = item.isCompleted() ? "[x]" : "[ ]";
+            sb.append(checkbox).append(" ").append(item.getText()).append("\n");
+        }
+
+        return sb.toString().trim();
     }
 }
