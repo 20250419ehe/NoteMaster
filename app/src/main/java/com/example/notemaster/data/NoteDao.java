@@ -29,6 +29,8 @@ public class NoteDao {
         values.put(DatabaseHelper.COLUMN_NOTE_CATEGORY, note.getCategory());
         values.put(DatabaseHelper.COLUMN_NOTE_IS_PINNED, note.isPinned() ? 1 : 0);
         values.put(DatabaseHelper.COLUMN_NOTE_IS_DELETED, note.isDeleted() ? 1 : 0);
+        values.put(DatabaseHelper.COLUMN_NOTE_IS_LOCKED, note.isLocked() ? 1 : 0);
+        values.put(DatabaseHelper.COLUMN_NOTE_PASSWORD, note.getPassword());
         values.put(DatabaseHelper.COLUMN_NOTE_CREATED_AT, note.getCreatedAt());
         values.put(DatabaseHelper.COLUMN_NOTE_UPDATED_AT, note.getUpdatedAt());
         values.put(DatabaseHelper.COLUMN_NOTE_SORT_ORDER, note.getSortOrder());
@@ -47,6 +49,8 @@ public class NoteDao {
         values.put(DatabaseHelper.COLUMN_NOTE_CATEGORY, note.getCategory());
         values.put(DatabaseHelper.COLUMN_NOTE_IS_PINNED, note.isPinned() ? 1 : 0);
         values.put(DatabaseHelper.COLUMN_NOTE_IS_DELETED, note.isDeleted() ? 1 : 0);
+        values.put(DatabaseHelper.COLUMN_NOTE_IS_LOCKED, note.isLocked() ? 1 : 0);
+        values.put(DatabaseHelper.COLUMN_NOTE_PASSWORD, note.getPassword());
         values.put(DatabaseHelper.COLUMN_NOTE_UPDATED_AT, System.currentTimeMillis());
         values.put(DatabaseHelper.COLUMN_NOTE_SORT_ORDER, note.getSortOrder());
         
@@ -94,6 +98,8 @@ public class NoteDao {
                 note.setCreatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_CREATED_AT)));
                 note.setUpdatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_UPDATED_AT)));
                 note.setSortOrder(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_SORT_ORDER)));
+                note.setLocked(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_IS_LOCKED)) == 1);
+                note.setPassword(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_PASSWORD)));
                 
                 notes.add(note);
             } while (cursor.moveToNext());
@@ -124,6 +130,8 @@ public class NoteDao {
             note.setCreatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_CREATED_AT)));
             note.setUpdatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_UPDATED_AT)));
             note.setSortOrder(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_SORT_ORDER)));
+            note.setLocked(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_IS_LOCKED)) == 1);
+            note.setPassword(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_PASSWORD)));
         }
         
         cursor.close();
@@ -159,6 +167,8 @@ public class NoteDao {
                 note.setCreatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_CREATED_AT)));
                 note.setUpdatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_UPDATED_AT)));
                 note.setSortOrder(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_SORT_ORDER)));
+                note.setLocked(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_IS_LOCKED)) == 1);
+                note.setPassword(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_PASSWORD)));
                 
                 notes.add(note);
             } while (cursor.moveToNext());
@@ -194,6 +204,8 @@ public class NoteDao {
                 note.setCreatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_CREATED_AT)));
                 note.setUpdatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_UPDATED_AT)));
                 note.setSortOrder(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_SORT_ORDER)));
+                note.setLocked(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_IS_LOCKED)) == 1);
+                note.setPassword(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_PASSWORD)));
                 notes.add(note);
             } while (cursor.moveToNext());
         }
@@ -226,6 +238,8 @@ public class NoteDao {
                 note.setCreatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_CREATED_AT)));
                 note.setUpdatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_UPDATED_AT)));
                 note.setSortOrder(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_SORT_ORDER)));
+                note.setLocked(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_IS_LOCKED)) == 1);
+                note.setPassword(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_PASSWORD)));
                 
                 notes.add(note);
             } while (cursor.moveToNext());
@@ -288,6 +302,8 @@ public class NoteDao {
                 note.setCreatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_CREATED_AT)));
                 note.setUpdatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_UPDATED_AT)));
                 note.setSortOrder(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_SORT_ORDER)));
+                note.setLocked(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_IS_LOCKED)) == 1);
+                note.setPassword(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_PASSWORD)));
                 notes.add(note);
             } while (cursor.moveToNext());
         }

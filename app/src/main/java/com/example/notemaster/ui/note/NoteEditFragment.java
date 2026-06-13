@@ -7,11 +7,16 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
@@ -36,6 +41,8 @@ public class NoteEditFragment extends Fragment {
     private long noteId = -1;
     private String selectedCategory = "";
     private List<String> categoryNames = new ArrayList<>();
+    private boolean isLocked = false;
+    private String notePassword = "";
 
     @Nullable
     @Override
@@ -141,6 +148,30 @@ public class NoteEditFragment extends Fragment {
 
         FloatingActionButton fabSave = view.findViewById(R.id.fabSave);
         fabSave.setOnClickListener(v -> saveNote());
+
+        // Lock functionality
+        LinearLayout lockSetting = view.findViewById(R.id.lockSetting);
+        ImageView lockIcon = view.findViewById(R.id.lockIcon);
+        TextView lockTextView = view.findViewById(R.id.lockTextView);
+        Switch lockSwitch = view.findViewById(R.id.lockSwitch);
+
+        lockSetting.setOnClickListener(v -> lockSwitch.toggle());
+
+        lockSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                showPasswordDialog(password -> {
+                    notePassword = password;
+                    isLocked = true;
+                    lockIcon.setImageResource(R.drawable.ic_lock);
+                    lockTextView.setText("已锁定");
+                }, () -> lockSwitch.setChecked(false));
+            } else {
+                isLocked = false;
+                notePassword = "";
+                lockIcon.setImageResource(R.drawable.ic_lock_open);
+                lockTextView.setText("锁定笔记");
+            }
+        });
     }
 
     private void loadNote() {
@@ -157,6 +188,18 @@ public class NoteEditFragment extends Fragment {
                     if (position >= 0) {
                         categorySpinner.setSelection(position);
                     }
+                }
+
+                isLocked = note.isLocked();
+                notePassword = note.getPassword() != null ? note.getPassword() : "";
+
+                Switch lockSwitch = getView().findViewById(R.id.lockSwitch);
+                ImageView lockIcon = getView().findViewById(R.id.lockIcon);
+                TextView lockTextView = getView().findViewById(R.id.lockTextView);
+                if (isLocked) {
+                    lockSwitch.setChecked(true);
+                    lockIcon.setImageResource(R.drawable.ic_lock);
+                    lockTextView.setText("已锁定");
                 }
             }
         });
@@ -176,6 +219,8 @@ public class NoteEditFragment extends Fragment {
         note.setContent(content);
         note.setCategory(selectedCategory);
         note.setUpdatedAt(System.currentTimeMillis());
+        note.setLocked(isLocked);
+        note.setPassword(notePassword);
 
         if (noteId != -1) {
             note.setId(noteId);
@@ -188,5 +233,31 @@ public class NoteEditFragment extends Fragment {
         }
 
         Navigation.findNavController(requireView()).navigateUp();
+    }
+
+    private interface OnPasswordSetListener {
+        void onPasswordSet(String password);
+    }
+
+    private void showPasswordDialog(OnPasswordSetListener onSet, Runnable onCancel) {
+        EditText passwordInput = new EditText(getContext());
+        passwordInput.setHint("输入密码");
+        passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        passwordInput.setPadding(64, 32, 64, 16);
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("设置密码")
+                .setView(passwordInput)
+                .setPositiveButton("确定", (dialog, which) -> {
+                    String password = passwordInput.getText().toString().trim();
+                    if (!password.isEmpty()) {
+                        onSet.onPasswordSet(password);
+                    } else {
+                        onCancel.run();
+                    }
+                })
+                .setNegativeButton("取消", (dialog, which) -> onCancel.run())
+                .setOnCancelListener(dialog -> onCancel.run())
+                .show();
     }
 }

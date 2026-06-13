@@ -7,6 +7,8 @@ public class Note {
     private String category;
     private boolean isPinned;
     private boolean isDeleted;
+    private boolean isLocked;
+    private String password;
     private long createdAt;
     private long updatedAt;
     private int sortOrder;
@@ -43,6 +45,12 @@ public class Note {
 
     public boolean isDeleted() { return isDeleted; }
     public void setDeleted(boolean deleted) { isDeleted = deleted; }
+
+    public boolean isLocked() { return isLocked; }
+    public void setLocked(boolean locked) { isLocked = locked; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }

@@ -75,11 +75,11 @@ public class NoteListFragment extends Fragment {
         noteAdapter.setOnNoteClickListener(new NoteAdapter.OnNoteClickListener() {
             @Override
             public void onNoteClick(Note note) {
-                // 导航到编辑界面
-                Bundle bundle = new Bundle();
-                bundle.putLong("noteId", note.getId());
-                Navigation.findNavController(requireView())
-                        .navigate(R.id.action_noteList_to_noteEdit, bundle);
+                if (note.isLocked()) {
+                    showUnlockDialog(note);
+                } else {
+                    navigateToEdit(note.getId());
+                }
             }
 
             @Override
@@ -184,6 +184,34 @@ public class NoteListFragment extends Fragment {
                     }
                 })
                 .show();
+    }
+
+    private void showUnlockDialog(Note note) {
+        EditText passwordInput = new EditText(getContext());
+        passwordInput.setHint("输入密码");
+        passwordInput.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        passwordInput.setPadding(64, 32, 64, 16);
+
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle("笔记已锁定")
+                .setView(passwordInput)
+                .setPositiveButton("解锁", (dialog, which) -> {
+                    String password = passwordInput.getText().toString().trim();
+                    if (password.equals(note.getPassword())) {
+                        navigateToEdit(note.getId());
+                    } else {
+                        Toast.makeText(getContext(), "密码错误", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void navigateToEdit(long noteId) {
+        Bundle bundle = new Bundle();
+        bundle.putLong("noteId", noteId);
+        Navigation.findNavController(requireView())
+                .navigate(R.id.action_noteList_to_noteEdit, bundle);
     }
 
     private void showDeleteDialog(Note note) {
