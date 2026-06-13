@@ -93,4 +93,9 @@ public class NoteViewModel extends AndroidViewModel {
         List<Note> notes = noteRepository.getNotesByCategory(category);
         allNotes.setValue(notes);
     }
+
+    public void searchNotesByCategory(String query, String category) {
+        List<Note> notes = noteRepository.searchNotesByCategory(query, category);
+        allNotes.setValue(notes);
+    }
 }

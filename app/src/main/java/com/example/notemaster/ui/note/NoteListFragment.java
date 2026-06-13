@@ -38,6 +38,8 @@ public class NoteListFragment extends Fragment {
     private RecyclerView notesRecyclerView;
     private TextView emptyStateTextView;
     private FloatingActionButton fabAddNote;
+    private String currentCategory = "全部";
+    private String currentSearchQuery = "";
 
     @Nullable
     @Override
@@ -54,9 +56,6 @@ public class NoteListFragment extends Fragment {
         setupRecyclerView();
         setupViewModel();
         setupListeners();
-        
-        // 加载笔记
-        noteViewModel.loadAllNotes();
     }
 
     private void initViews(View view) {
@@ -118,46 +117,50 @@ public class NoteListFragment extends Fragment {
     }
 
     private void setupListeners() {
-        // 搜索功能
         searchEditText.addTextChangedListener(new android.text.TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s.toString().trim();
-                if (query.isEmpty()) {
-                    noteViewModel.loadAllNotes();
-                } else {
-                    noteViewModel.searchNotes(query);
-                }
+                currentSearchQuery = s.toString().trim();
+                applyFilters();
             }
 
             @Override
             public void afterTextChanged(android.text.Editable s) {}
         });
 
-        // 添加笔记按钮
         fabAddNote.setOnClickListener(v -> {
             Navigation.findNavController(v)
                     .navigate(R.id.action_noteList_to_noteEdit);
         });
 
-        // 分类筛选
         categorySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                String category = parent.getItemAtPosition(position).toString();
-                if (category.equals("全部") || category.isEmpty()) {
-                    noteViewModel.loadAllNotes();
-                } else {
-                    noteViewModel.loadNotesByCategory(category);
-                }
+                currentCategory = parent.getItemAtPosition(position).toString();
+                applyFilters();
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
         });
+    }
+
+    private void applyFilters() {
+        boolean categoryAll = currentCategory.equals("全部") || currentCategory.isEmpty();
+        boolean searchEmpty = currentSearchQuery.isEmpty();
+
+        if (searchEmpty && categoryAll) {
+            noteViewModel.loadAllNotes();
+        } else if (searchEmpty) {
+            noteViewModel.loadNotesByCategory(currentCategory);
+        } else if (categoryAll) {
+            noteViewModel.searchNotes(currentSearchQuery);
+        } else {
+            noteViewModel.searchNotesByCategory(currentSearchQuery, currentCategory);
+        }
     }
 
     private void showDeleteDialog(Note note) {

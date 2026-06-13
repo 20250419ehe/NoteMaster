@@ -259,6 +259,44 @@ public class NoteDao {
         return rowsAffected;
     }
 
+    // 按分类和关键字搜索笔记
+    public List<Note> searchNotesByCategory(String query, String category) {
+        List<Note> notes = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+        String searchQuery = "SELECT * FROM " + DatabaseHelper.TABLE_NOTES +
+                " WHERE " + DatabaseHelper.COLUMN_NOTE_IS_DELETED + " = 0" +
+                " AND " + DatabaseHelper.COLUMN_NOTE_CATEGORY + " = ?" +
+                " AND (" + DatabaseHelper.COLUMN_NOTE_TITLE + " LIKE ?" +
+                " OR " + DatabaseHelper.COLUMN_NOTE_CONTENT + " LIKE ?)" +
+                " ORDER BY " + DatabaseHelper.COLUMN_NOTE_IS_PINNED + " DESC," +
+                DatabaseHelper.COLUMN_NOTE_SORT_ORDER + " ASC";
+
+        String[] selectionArgs = {category, "%" + query + "%", "%" + query + "%"};
+
+        Cursor cursor = db.rawQuery(searchQuery, selectionArgs);
+
+        if (cursor.moveToFirst()) {
+            do {
+                Note note = new Note();
+                note.setId(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_ID)));
+                note.setTitle(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_TITLE)));
+                note.setContent(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_CONTENT)));
+                note.setCategory(cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_CATEGORY)));
+                note.setPinned(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_IS_PINNED)) == 1);
+                note.setDeleted(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_IS_DELETED)) == 1);
+                note.setCreatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_CREATED_AT)));
+                note.setUpdatedAt(cursor.getLong(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_UPDATED_AT)));
+                note.setSortOrder(cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_NOTE_SORT_ORDER)));
+                notes.add(note);
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        db.close();
+        return notes;
+    }
+
     // 更新笔记排序
     public void updateNoteOrder(long noteId, int newOrder) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();

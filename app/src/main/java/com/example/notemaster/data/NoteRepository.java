@@ -56,4 +56,8 @@ public class NoteRepository {
     public List<Note> getNotesByCategory(String category) {
         return noteDao.getNotesByCategory(category);
     }
+
+    public List<Note> searchNotesByCategory(String query, String category) {
+        return noteDao.searchNotesByCategory(query, category);
+    }
 }
