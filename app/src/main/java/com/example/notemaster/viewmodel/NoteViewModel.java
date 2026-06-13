@@ -89,6 +89,12 @@ public class NoteViewModel extends AndroidViewModel {
         loadAllNotes();
     }
 
+    public void togglePinNote(Note note) {
+        note.setPinned(!note.isPinned());
+        noteRepository.updateNote(note);
+        loadAllNotes();
+    }
+
     public void loadNotesByCategory(String category) {
         List<Note> notes = noteRepository.getNotesByCategory(category);
         allNotes.setValue(notes);

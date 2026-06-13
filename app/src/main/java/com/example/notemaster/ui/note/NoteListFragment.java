@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -83,8 +84,7 @@ public class NoteListFragment extends Fragment {
 
             @Override
             public void onNoteLongClick(Note note) {
-                // 长按删除笔记
-                showDeleteDialog(note);
+                showNoteOptionsDialog(note);
             }
         });
     }
@@ -161,6 +161,29 @@ public class NoteListFragment extends Fragment {
         } else {
             noteViewModel.searchNotesByCategory(currentSearchQuery, currentCategory);
         }
+    }
+
+    private void showNoteOptionsDialog(Note note) {
+        String[] options;
+        if (note.isPinned()) {
+            options = new String[]{"取消置顶", "删除"};
+        } else {
+            options = new String[]{"置顶", "删除"};
+        }
+
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle(note.getTitle())
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        noteViewModel.togglePinNote(note);
+                        Toast.makeText(getContext(),
+                                note.isPinned() ? "已取消置顶" : "已置顶",
+                                Toast.LENGTH_SHORT).show();
+                    } else {
+                        showDeleteDialog(note);
+                    }
+                })
+                .show();
     }
 
     private void showDeleteDialog(Note note) {
