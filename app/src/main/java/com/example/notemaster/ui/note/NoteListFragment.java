@@ -61,7 +61,6 @@ public class NoteListFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
         SharedPreferences prefs = requireContext().getSharedPreferences("settings", 0);
         isGridView = prefs.getBoolean("grid_view", false);
     }
@@ -78,6 +77,7 @@ public class NoteListFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         
         initViews(view);
+        setupToolbar(view);
         setupRecyclerView();
         setupViewModel();
         setupListeners();
@@ -85,28 +85,25 @@ public class NoteListFragment extends Fragment {
         applyViewMode();
     }
 
-    @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        inflater.inflate(R.menu.main_menu, menu);
-        super.onCreateOptionsMenu(menu, inflater);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_view_toggle) {
-            toggleViewMode();
-            return true;
-        } else if (item.getItemId() == R.id.action_search) {
-            searchEditText.requestFocus();
-            return true;
-        } else if (item.getItemId() == R.id.action_category) {
-            Navigation.findNavController(requireView()).navigate(R.id.action_noteList_to_categoryList);
-            return true;
-        } else if (item.getItemId() == R.id.action_settings) {
-            Navigation.findNavController(requireView()).navigate(R.id.action_noteList_to_settings);
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+    private void setupToolbar(View view) {
+        MaterialToolbar toolbar = view.findViewById(R.id.toolbar);
+        toolbar.inflateMenu(R.menu.main_menu);
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_view_toggle) {
+                toggleViewMode();
+                return true;
+            } else if (item.getItemId() == R.id.action_search) {
+                searchEditText.requestFocus();
+                return true;
+            } else if (item.getItemId() == R.id.action_category) {
+                Navigation.findNavController(requireView()).navigate(R.id.action_noteList_to_categoryList);
+                return true;
+            } else if (item.getItemId() == R.id.action_settings) {
+                Navigation.findNavController(requireView()).navigate(R.id.action_noteList_to_settings);
+                return true;
+            }
+            return false;
+        });
     }
 
     private void toggleViewMode() {
