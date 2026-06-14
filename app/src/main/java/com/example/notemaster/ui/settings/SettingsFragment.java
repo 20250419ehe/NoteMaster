@@ -109,6 +109,18 @@ public class SettingsFragment extends Fragment {
         // 恢复数据
         LinearLayout restoreSetting = view.findViewById(R.id.restoreSetting);
         restoreSetting.setOnClickListener(v -> showRestoreDialog());
+
+        // 主题颜色
+        LinearLayout themeColorSetting = view.findViewById(R.id.themeColorSetting);
+        View themeColorPreview = view.findViewById(R.id.themeColorPreview);
+        int savedColor = prefs.getInt("theme_color", 0xFF6200EE);
+        themeColorPreview.getBackground().setTint(savedColor);
+
+        themeColorSetting.setOnClickListener(v -> showColorPickerDialog(color -> {
+            prefs.edit().putInt("theme_color", color).apply();
+            themeColorPreview.getBackground().setTint(color);
+            Toast.makeText(getContext(), "主题颜色已更新，重启应用生效", Toast.LENGTH_SHORT).show();
+        }));
     }
 
     private void loadStatistics(View view) {
@@ -193,5 +205,21 @@ public class SettingsFragment extends Fragment {
         } catch (Exception e) {
             Toast.makeText(getContext(), "恢复失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void showColorPickerDialog(OnColorSelectedListener listener) {
+        String[] colorNames = {"紫色", "蓝色", "绿色", "红色", "橙色", "粉色"};
+        int[] colorValues = {0xFF6200EE, 0xFF2196F3, 0xFF4CAF50, 0xFFF44336, 0xFFFF9800, 0xFFE91E63};
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("选择主题颜色")
+                .setItems(colorNames, (dialog, which) -> {
+                    listener.onColorSelected(colorValues[which]);
+                })
+                .show();
+    }
+
+    private interface OnColorSelectedListener {
+        void onColorSelected(int color);
     }
 }
