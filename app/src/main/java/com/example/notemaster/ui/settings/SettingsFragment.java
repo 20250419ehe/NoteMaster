@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.Switch;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,7 +17,13 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
 import com.example.notemaster.R;
+import com.example.notemaster.data.CategoryDao;
+import com.example.notemaster.data.NoteDao;
+import com.example.notemaster.data.TagDao;
+import com.example.notemaster.model.Note;
 import com.google.android.material.appbar.MaterialToolbar;
+
+import java.util.List;
 
 public class SettingsFragment extends Fragment {
 
@@ -54,5 +61,40 @@ public class SettingsFragment extends Fragment {
         LinearLayout trashSetting = view.findViewById(R.id.trashSetting);
         trashSetting.setOnClickListener(v ->
             Navigation.findNavController(v).navigate(R.id.action_settings_to_trash));
+
+        // 加载统计信息
+        loadStatistics(view);
+    }
+
+    private void loadStatistics(View view) {
+        try {
+            NoteDao noteDao = new NoteDao(requireContext());
+            CategoryDao categoryDao = new CategoryDao(requireContext());
+            TagDao tagDao = new TagDao(requireContext());
+
+            List<Note> notes = noteDao.getAllNotes();
+            int totalNotes = notes.size();
+            int totalWords = 0;
+            for (Note note : notes) {
+                if (note.getContent() != null) {
+                    totalWords += note.getContent().length();
+                }
+            }
+
+            int totalCategories = categoryDao.getCategoryCount();
+            int totalTags = tagDao.getAllTags().size();
+
+            TextView statsTotalNotes = view.findViewById(R.id.statsTotalNotes);
+            TextView statsTotalWords = view.findViewById(R.id.statsTotalWords);
+            TextView statsTotalCategories = view.findViewById(R.id.statsTotalCategories);
+            TextView statsTotalTags = view.findViewById(R.id.statsTotalTags);
+
+            if (statsTotalNotes != null) statsTotalNotes.setText("笔记总数: " + totalNotes);
+            if (statsTotalWords != null) statsTotalWords.setText("总字数: " + totalWords);
+            if (statsTotalCategories != null) statsTotalCategories.setText("分类数量: " + totalCategories);
+            if (statsTotalTags != null) statsTotalTags.setText("标签数量: " + totalTags);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
