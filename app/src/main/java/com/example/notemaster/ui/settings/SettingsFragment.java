@@ -24,10 +24,15 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
 import com.example.notemaster.R;
+import com.example.notemaster.data.CategoryDao;
+import com.example.notemaster.data.NoteDao;
+import com.example.notemaster.data.TagDao;
+import com.example.notemaster.model.Note;
 import com.example.notemaster.util.BackupHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.io.File;
+import java.util.List;
 
 public class SettingsFragment extends Fragment {
 
@@ -104,6 +109,67 @@ public class SettingsFragment extends Fragment {
         if (restoreSetting != null) {
             restoreSetting.setOnClickListener(v -> showRestoreDialog());
         }
+
+        // 加载统计信息
+        loadStatistics(view);
+
+        // 主题颜色
+        LinearLayout themeColorSetting = view.findViewById(R.id.themeColorSetting);
+        View themeColorPreview = view.findViewById(R.id.themeColorPreview);
+        if (themeColorSetting != null) {
+            int savedColor = prefs.getInt("theme_color", 0xFF6200EE);
+            themeColorPreview.getBackground().setTint(savedColor);
+
+            themeColorSetting.setOnClickListener(v -> showColorPickerDialog(savedColor, color -> {
+                prefs.edit().putInt("theme_color", color).apply();
+                themeColorPreview.getBackground().setTint(color);
+                Toast.makeText(getContext(), "主题颜色已更新，重启应用生效", Toast.LENGTH_SHORT).show();
+            }));
+        }
+    }
+
+    private void showColorPickerDialog(int currentColor, OnColorSelectedListener listener) {
+        String[] colorNames = {"紫色", "蓝色", "绿色", "红色", "橙色", "粉色"};
+        int[] colorValues = {0xFF6200EE, 0xFF2196F3, 0xFF4CAF50, 0xFFF44336, 0xFFFF9800, 0xFFE91E63};
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("选择主题颜色")
+                .setItems(colorNames, (dialog, which) -> {
+                    listener.onColorSelected(colorValues[which]);
+                })
+                .show();
+    }
+
+    private interface OnColorSelectedListener {
+        void onColorSelected(int color);
+    }
+
+    private void loadStatistics(View view) {
+        NoteDao noteDao = new NoteDao(requireContext());
+        CategoryDao categoryDao = new CategoryDao(requireContext());
+        TagDao tagDao = new TagDao(requireContext());
+
+        List<Note> notes = noteDao.getAllNotes();
+        int totalNotes = notes.size();
+        int totalWords = 0;
+        for (Note note : notes) {
+            if (note.getContent() != null) {
+                totalWords += note.getContent().length();
+            }
+        }
+
+        int totalCategories = categoryDao.getCategoryCount();
+        int totalTags = tagDao.getAllTags().size();
+
+        TextView statsTotalNotes = view.findViewById(R.id.statsTotalNotes);
+        TextView statsTotalWords = view.findViewById(R.id.statsTotalWords);
+        TextView statsTotalCategories = view.findViewById(R.id.statsTotalCategories);
+        TextView statsTotalTags = view.findViewById(R.id.statsTotalTags);
+
+        if (statsTotalNotes != null) statsTotalNotes.setText("笔记总数: " + totalNotes);
+        if (statsTotalWords != null) statsTotalWords.setText("总字数: " + totalWords);
+        if (statsTotalCategories != null) statsTotalCategories.setText("分类数量: " + totalCategories);
+        if (statsTotalTags != null) statsTotalTags.setText("标签数量: " + totalTags);
     }
 
     private void showBackupDialog() {
