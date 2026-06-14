@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.notemaster.R;
 import com.example.notemaster.model.Category;
 import com.example.notemaster.model.Note;
+import com.example.notemaster.util.ThemeHelper;
 import com.example.notemaster.viewmodel.CategoryViewModel;
 import com.example.notemaster.viewmodel.NoteViewModel;
 import com.example.notemaster.viewmodel.TagViewModel;
@@ -87,6 +88,7 @@ public class NoteListFragment extends Fragment {
 
     private void setupToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbar);
+        ThemeHelper.applyToolbarColor(requireContext(), toolbar);
         toolbar.inflateMenu(R.menu.main_menu);
         toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_view_toggle) {

@@ -22,6 +22,7 @@ import android.widget.Toast;
 import com.example.notemaster.util.NoteTemplate;
 import com.example.notemaster.util.ReminderHelper;
 import com.example.notemaster.util.RichTextUtils;
+import com.example.notemaster.util.ThemeHelper;
 import com.example.notemaster.util.UndoRedoManager;
 
 import java.text.SimpleDateFormat;
@@ -122,6 +123,7 @@ public class NoteEditFragment extends Fragment {
 
     private void setupToolbar(View view) {
         MaterialToolbar toolbar = view.findViewById(R.id.toolbar);
+        ThemeHelper.applyToolbarColor(requireContext(), toolbar);
         toolbar.setTitle(noteId == -1 ? "新建笔记" : "编辑笔记");
         toolbar.setNavigationOnClickListener(v ->
                 Navigation.findNavController(v).navigateUp());
