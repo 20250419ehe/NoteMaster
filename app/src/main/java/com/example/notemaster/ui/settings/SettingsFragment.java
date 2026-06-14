@@ -19,7 +19,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
@@ -31,32 +30,39 @@ import com.example.notemaster.model.Note;
 import com.example.notemaster.util.BackupHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 
-import java.io.File;
 import java.util.List;
 
 public class SettingsFragment extends Fragment {
 
-    private final ActivityResultLauncher<Intent> backupLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
-                    Uri uri = result.getData().getData();
-                    if (uri != null) {
-                        exportBackup(uri);
-                    }
-                }
-            });
+    private ActivityResultLauncher<Intent> backupLauncher;
+    private ActivityResultLauncher<Intent> restoreLauncher;
 
-    private final ActivityResultLauncher<Intent> restoreLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
-                    Uri uri = result.getData().getData();
-                    if (uri != null) {
-                        importBackup(uri);
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        backupLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        if (uri != null) {
+                            exportBackup(uri);
+                        }
                     }
-                }
-            });
+                });
+
+        restoreLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        if (uri != null) {
+                            importBackup(uri);
+                        }
+                    }
+                });
+    }
 
     @Nullable
     @Override
