@@ -23,14 +23,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
+public class NoteAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private static final int VIEW_TYPE_LIST = 0;
+    private static final int VIEW_TYPE_GRID = 1;
+
     private List<Note> notes = new ArrayList<>();
     private OnNoteClickListener listener;
     private OnSelectionChangedListener selectionListener;
     private TagViewModel tagViewModel;
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+    private SimpleDateFormat gridDateFormat = new SimpleDateFormat("MM-dd", Locale.getDefault());
 
     private boolean multiSelectMode = false;
+    private boolean isGridView = false;
     private Set<Long> selectedNoteIds = new HashSet<>();
 
     public interface OnNoteClickListener {
@@ -52,6 +57,15 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
 
     public void setTagViewModel(TagViewModel tagViewModel) {
         this.tagViewModel = tagViewModel;
+    }
+
+    public void setGridView(boolean isGridView) {
+        this.isGridView = isGridView;
+        notifyDataSetChanged();
+    }
+
+    public boolean isGridView() {
+        return isGridView;
     }
 
     public void setNotes(List<Note> notes) {
@@ -131,23 +145,173 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder
         return multiSelectMode;
     }
 
+    @Override
+    public int getItemViewType(int position) {
+        return isGridView ? VIEW_TYPE_GRID : VIEW_TYPE_LIST;
+    }
+
     @NonNull
     @Override
-    public NoteViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View itemView = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_note, parent, false);
-        return new NoteViewHolder(itemView);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == VIEW_TYPE_GRID) {
+            View itemView = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_note_grid, parent, false);
+            return new GridViewHolder(itemView);
+        } else {
+            View itemView = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_note, parent, false);
+            return new NoteViewHolder(itemView);
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Note currentNote = notes.get(position);
-        holder.bind(currentNote);
+        if (holder instanceof GridViewHolder) {
+            ((GridViewHolder) holder).bind(currentNote);
+        } else if (holder instanceof NoteViewHolder) {
+            ((NoteViewHolder) holder).bind(currentNote);
+        }
     }
 
     @Override
     public int getItemCount() {
         return notes.size();
+    }
+
+    class GridViewHolder extends RecyclerView.ViewHolder {
+        private TextView titleTextView;
+        private TextView contentPreviewTextView;
+        private TextView categoryTextView;
+        private TextView updatedAtTextView;
+        private ImageView noteImageView;
+        private TextView todoProgressTextView;
+        private CheckBox selectCheckBox;
+
+        public GridViewHolder(@NonNull View itemView) {
+            super(itemView);
+            titleTextView = itemView.findViewById(R.id.titleTextView);
+            contentPreviewTextView = itemView.findViewById(R.id.contentPreviewTextView);
+            categoryTextView = itemView.findViewById(R.id.categoryTextView);
+            updatedAtTextView = itemView.findViewById(R.id.updatedAtTextView);
+            noteImageView = itemView.findViewById(R.id.noteImageView);
+            todoProgressTextView = itemView.findViewById(R.id.todoProgressTextView);
+            selectCheckBox = itemView.findViewById(R.id.selectCheckBox);
+
+            itemView.setOnClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position == RecyclerView.NO_POSITION) return;
+
+                if (multiSelectMode) {
+                    toggleSelection(notes.get(position).getId());
+                } else if (listener != null) {
+                    listener.onNoteClick(notes.get(position));
+                }
+            });
+
+            itemView.setOnLongClickListener(v -> {
+                int position = getAdapterPosition();
+                if (position == RecyclerView.NO_POSITION) return false;
+
+                if (!multiSelectMode && listener != null) {
+                    listener.onNoteLongClick(notes.get(position));
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        public void bind(Note note) {
+            titleTextView.setText(note.getTitle());
+
+            if (multiSelectMode) {
+                selectCheckBox.setVisibility(View.VISIBLE);
+                selectCheckBox.setChecked(selectedNoteIds.contains(note.getId()));
+                itemView.setActivated(selectedNoteIds.contains(note.getId()));
+            } else {
+                selectCheckBox.setVisibility(View.GONE);
+                itemView.setActivated(false);
+            }
+
+            String contentPreview = note.getContent();
+            String firstImageUrl = null;
+            if (contentPreview != null) {
+                int todoIndex = contentPreview.indexOf("[TODO]");
+                if (todoIndex > 0) {
+                    contentPreview = contentPreview.substring(0, todoIndex);
+                }
+
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("!\\[图片\\]\\(([^)]+)\\)");
+                java.util.regex.Matcher matcher = pattern.matcher(contentPreview);
+                if (matcher.find()) {
+                    firstImageUrl = matcher.group(1);
+                }
+
+                contentPreview = contentPreview.replaceAll("!\\[图片\\]\\([^)]+\\)", "").replaceAll("<[^>]*>", "").trim();
+                if (contentPreview.length() > 60) {
+                    contentPreview = contentPreview.substring(0, 60) + "...";
+                }
+                if (!contentPreview.isEmpty()) {
+                    contentPreviewTextView.setText(contentPreview);
+                    contentPreviewTextView.setVisibility(View.VISIBLE);
+                } else {
+                    contentPreviewTextView.setVisibility(View.GONE);
+                }
+            } else {
+                contentPreviewTextView.setVisibility(View.GONE);
+            }
+
+            if (firstImageUrl != null && !firstImageUrl.isEmpty()) {
+                Glide.with(itemView.getContext())
+                        .load(firstImageUrl)
+                        .centerCrop()
+                        .placeholder(R.drawable.ic_image)
+                        .into(noteImageView);
+                noteImageView.setVisibility(View.VISIBLE);
+            } else {
+                noteImageView.setVisibility(View.GONE);
+            }
+
+            if (note.getCategory() != null && !note.getCategory().isEmpty()) {
+                categoryTextView.setText(note.getCategory());
+                categoryTextView.setVisibility(View.VISIBLE);
+            } else {
+                categoryTextView.setVisibility(View.GONE);
+            }
+
+            updatedAtTextView.setText(gridDateFormat.format(new Date(note.getUpdatedAt())));
+
+            String content = note.getContent();
+            if (content != null && content.contains("[TODO]")) {
+                int total = 0;
+                int completed = 0;
+                String[] lines = content.split("\n");
+                boolean inTodoSection = false;
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.equals("[TODO]")) {
+                        inTodoSection = true;
+                        continue;
+                    }
+                    if (inTodoSection) {
+                        if (line.startsWith("[x]") || line.startsWith("[ ]")) {
+                            total++;
+                            if (line.startsWith("[x]")) {
+                                completed++;
+                            }
+                        }
+                    }
+                }
+                if (total > 0) {
+                    todoProgressTextView.setText("待办: " + completed + "/" + total);
+                    todoProgressTextView.setVisibility(View.VISIBLE);
+                } else {
+                    todoProgressTextView.setVisibility(View.GONE);
+                }
+            } else {
+                todoProgressTextView.setVisibility(View.GONE);
+            }
+        }
     }
 
     class NoteViewHolder extends RecyclerView.ViewHolder {

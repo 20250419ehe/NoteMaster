@@ -1,7 +1,11 @@
 package com.example.notemaster.ui.note;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -19,6 +23,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -29,6 +34,7 @@ import com.example.notemaster.model.Note;
 import com.example.notemaster.viewmodel.CategoryViewModel;
 import com.example.notemaster.viewmodel.NoteViewModel;
 import com.example.notemaster.viewmodel.TagViewModel;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -50,6 +56,15 @@ public class NoteListFragment extends Fragment {
     private CheckBox selectAllCheckBox;
     private String currentCategory = "全部";
     private String currentSearchQuery = "";
+    private boolean isGridView = false;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+        SharedPreferences prefs = requireContext().getSharedPreferences("settings", 0);
+        isGridView = prefs.getBoolean("grid_view", false);
+    }
 
     @Nullable
     @Override
@@ -67,6 +82,47 @@ public class NoteListFragment extends Fragment {
         setupViewModel();
         setupListeners();
         setupBatchActionBar(view);
+        applyViewMode();
+    }
+
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+        inflater.inflate(R.menu.main_menu, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_view_toggle) {
+            toggleViewMode();
+            return true;
+        } else if (item.getItemId() == R.id.action_search) {
+            searchEditText.requestFocus();
+            return true;
+        } else if (item.getItemId() == R.id.action_category) {
+            Navigation.findNavController(requireView()).navigate(R.id.action_noteList_to_categoryList);
+            return true;
+        } else if (item.getItemId() == R.id.action_settings) {
+            Navigation.findNavController(requireView()).navigate(R.id.action_noteList_to_settings);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void toggleViewMode() {
+        isGridView = !isGridView;
+        SharedPreferences prefs = requireContext().getSharedPreferences("settings", 0);
+        prefs.edit().putBoolean("grid_view", isGridView).apply();
+        applyViewMode();
+    }
+
+    private void applyViewMode() {
+        if (isGridView) {
+            notesRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        } else {
+            notesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        }
+        noteAdapter.setGridView(isGridView);
     }
 
     private void initViews(View view) {
